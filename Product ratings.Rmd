@@ -1,0 +1,13 @@
+---
+title: "Product ratings exercise 1"
+output: html_notebook
+---
+
+**Analisi delle componenti principali**
+
+Lettura e visualizzazione del dataset
+
+```{r}
+data = read.csv("Product_ratings.txt", sep="\t")
+head(data)
+```

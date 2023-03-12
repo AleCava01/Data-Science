@@ -38,11 +38,11 @@ l’analisi delle componenti principali
 2.  Matrice di covarianza (correlazione per dati standardizzati)
 3.  Calcolare le componenti principali (loadings)
 4.  Selezione componenti principali
-5.  Proiezione dei dati nel nuovo spazio e analisi
+5.  Proiezione dei dati nel nuovo spazio e interpretazione dei risultati
 
 ------------------------------------------------------------------------
 
-### Step 1
+### Step 1 - Normalizzazione
 
 Estraggo solo le variabili numeriche dal dataset e normalizzo i dati
 
@@ -72,7 +72,7 @@ head(product_data_scaled)
     ## [5,]  0.38758048  0.04066301 -0.11971352 -0.17605167  0.2414225 0.5435035
     ## [6,]  0.22424542 -0.03817269 -0.15751736 -0.02020584 -0.1615313 0.7099536
 
-### Step 2
+### Step 2 - Matrice di correlazione
 
 Calcolo e visualizzazione della matrice di covarianza dei dati
 standardizzati = matrice di correlazione dei dati numerici
@@ -85,38 +85,38 @@ già prima con lo scatterplot)
 ### Step 3 - Calcolo componenti principali
 
 ``` r
-principal_components <- princomp(corr_matrix)
-summary(principal_components)
+PC_products_scaled <- princomp(product_data_scaled)
+summary(PC_products_scaled)
 ```
 
     ## Importance of components:
-    ##                           Comp.1    Comp.2     Comp.3      Comp.4       Comp.5
-    ## Standard deviation     0.1622537 0.0651416 0.03006493 0.013547263 0.0047106001
-    ## Proportion of Variance 0.8310238 0.1339496 0.02853284 0.005793322 0.0007004498
-    ## Cumulative Proportion  0.8310238 0.9649734 0.99350623 0.999299550 1.0000000000
-    ##                              Comp.6
-    ## Standard deviation     3.761893e-10
-    ## Proportion of Variance 4.467221e-18
-    ## Cumulative Proportion  1.000000e+00
+    ##                           Comp.1     Comp.2     Comp.3      Comp.4      Comp.5
+    ## Standard deviation     2.3295245 0.62909369 0.27954051 0.202584236 0.148356960
+    ## Proportion of Variance 0.9082317 0.06623579 0.01307831 0.006868682 0.003683646
+    ## Cumulative Proportion  0.9082317 0.97446749 0.98754580 0.994414477 0.998098123
+    ##                             Comp.6
+    ## Standard deviation     0.106600721
+    ## Proportion of Variance 0.001901877
+    ## Cumulative Proportion  1.000000000
 
-Si osserva che oltre il 96% della varianza è spiegata dalle prime due
+Si osserva che oltre il 97% della varianza è spiegata dalle prime due
 componenti.
 
 Ottendo le componenti principali (versori/loadings):
 
 ``` r
-principal_components$loadings
+PC_products_scaled$loadings
 ```
 
     ## 
     ## Loadings:
     ##           Comp.1 Comp.2 Comp.3 Comp.4 Comp.5 Comp.6
-    ## Stars_5    0.602  0.199  0.338  0.284  0.241  0.587
-    ## Stars_4    0.292  0.422  0.300  0.180 -0.652 -0.435
-    ## Stars_3   -0.101  0.515         0.163  0.684 -0.474
-    ## Stars_2   -0.443  0.339  0.569 -0.527         0.290
-    ## Stars_1   -0.545  0.302 -0.206  0.641 -0.197  0.346
-    ## not_rated  0.221  0.558 -0.651 -0.414         0.194
+    ## Stars_5    0.392  0.598  0.383  0.390  0.285  0.330
+    ## Stars_4    0.418  0.287  0.178 -0.118 -0.419 -0.722
+    ## Stars_3    0.424 -0.106        -0.207 -0.642  0.589
+    ## Stars_2    0.404 -0.447  0.460 -0.487  0.434       
+    ## Stars_1    0.397 -0.549 -0.148  0.705        -0.147
+    ## not_rated  0.413  0.216 -0.762 -0.239  0.378       
     ## 
     ##                Comp.1 Comp.2 Comp.3 Comp.4 Comp.5 Comp.6
     ## SS loadings     1.000  1.000  1.000  1.000  1.000  1.000
@@ -128,7 +128,7 @@ principal_components$loadings
 Utilizzo il criterio del gomito
 
 ``` r
-plot(cumsum(principal_components$sd^2)/sum(principal_components$sd^2), type="b", axes =F, xlab="numero di componenti", ylab="contributo alla varianza totale", ylim=c(0,1))
+plot(cumsum(PC_products_scaled$sd^2)/sum(PC_products_scaled$sd^2), type="b", axes =F, xlab="numero di componenti", ylab="contributo alla varianza totale", ylim=c(0,1))
 abline(h=1, col="blue")
 box()
 axis(2,at=0:10/10,labels=0:10/10)
@@ -140,7 +140,7 @@ axis(1,at=1:ncol(product_data_num),labels = 1:ncol(product_data_num),las=2)
 Analizzo anche gli scores attraverso un boxplot
 
 ``` r
-boxplot(principal_components$scores, col="gold")
+boxplot(PC_products_scaled$scores, col="gold")
 ```
 
 ![](Product_ratings_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
@@ -149,7 +149,22 @@ boxplot(principal_components$scores, col="gold")
 
 ``` r
 par(mfrow = c(2,1))
-for(i in 1:2) barplot(principal_components$loadings[,i], ylim = c(-1,1))
+for(i in 1:2) barplot(PC_products_scaled$loadings[,i], ylim = c(-1,1))
 ```
 
 ![](Product_ratings_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+### Step 5 - Proiezione dei dati nel nuovo spazio e interpretazione dei risultati
+
+``` r
+library(ggfortify)
+autoplot(PC_products_scaled, loadings=TRUE, loadings.label=TRUE)
+```
+
+![](Product_ratings_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+La prima componente indica se un prodotto in un particolare mese è più
+recensito del solito.
+
+La seconda componente indica invece quanto un prodotto viene gradito in
+un particolare mese.

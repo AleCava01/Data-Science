@@ -168,3 +168,5 @@ recensito del solito.
 
 La seconda componente indica invece quanto un prodotto viene gradito in
 un particolare mese.
+
+test

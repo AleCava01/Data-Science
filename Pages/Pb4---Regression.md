@@ -150,7 +150,7 @@ dipendente dalla X
 
 ``` r
 #verifica omoschedasticità
-plot(I(data$anno^2), scale(first_model$residuals)) 
+plot(first_model$fitted.values, scale(first_model$residuals)) 
 abline(h = 0) 
 ```
 
@@ -253,7 +253,7 @@ dell’AIC. Il modello suggerito è quindi quello inizialmente formulato.
 ## Intervalli di previsione
 
 Sulla base del modello sopra formulato, vado a costruire tre intervalli
-di prevsione per il numero di veicoli registrati nei tre paesi durante
+di previsione per il numero di veicoli registrati nei tre paesi durante
 l’undicesimo anno in modo che le tre nuove osservazioni cadranno
 simultaneamente all’interno dei rispettivi intervalli con il 95% di
 probabilità.
@@ -270,10 +270,32 @@ pred_intervals
     ## 2 212.6943 183.86594 241.5227
     ## 3 272.5509 243.72252 301.3792
 
+### Visualizzazione degli intervalli
+
 ``` r
-boxplot(t(pred_intervals), names=levels(data$paese))
+boxplot(t(pred_intervals), names=levels(data$paese), col=c("#F8766D","#00BA38","#619CFF"), main="Intervalli di previsione per immatricolazioni (anno 11)")
 ```
 
-![](Pb4---Regression_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](Pb4---Regression_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+``` r
+data$y_hat=predict(first_model, newdata = data[,-1])
+ggplot(data, aes(x=anno, y=immatricolazioni, group=paese))+
+  geom_point(aes(color=paese))+
+  geom_smooth(method='loess', aes(x=anno, y=y_hat, color=paese), formula = 'y ~ x')+
+  geom_pointrange(aes(x=11, y=pred_intervals[1,1], ymin=pred_intervals[1,3], ymax=pred_intervals[1,2]), color="#F8766D")+
+    geom_pointrange(aes(x=11, y=pred_intervals[2,1], ymin=pred_intervals[2,3], ymax=pred_intervals[2,2]), color="#00BA38")+
+    geom_pointrange(aes(x=11, y=pred_intervals[3,1], ymin=pred_intervals[3,3], ymax=pred_intervals[3,2]), color="#619CFF")+
+  scale_x_continuous(breaks=seq(1,11,by=1))+
+  scale_y_continuous(breaks=seq(0,300,by=50))
+```
+
+![](Pb4---Regression_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+``` r
+?aes
+```
+
+    ## avvio in corso del server httpd per la guida ... fatto
 
 ## 

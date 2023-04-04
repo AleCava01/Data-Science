@@ -1,7 +1,5 @@
-pb4
+PB4 - Regression and stepwise selection
 ================
-
-# PB4 - Regression
 
 Il file Pb4.txt riporta il numero Y (espresso in migliaia di unità) di
 veicoli immatricolati annualmente in tre paesi dell’Unione europea
@@ -20,6 +18,8 @@ $$
 - $x :$ anni $\in [1,2,…,10]$
 
 - $g:$ Francia, Germania, Italia
+
+## Dati
 
 ### Caricamento dei dati
 
@@ -71,25 +71,13 @@ head(data)
 
 ``` r
 library(tidyverse)
-```
-
-    ## ── Attaching core tidyverse packages ──────────────────────── tidyverse 2.0.0 ──
-    ## ✔ dplyr     1.1.0     ✔ readr     2.1.4
-    ## ✔ forcats   1.0.0     ✔ stringr   1.5.0
-    ## ✔ ggplot2   3.4.1     ✔ tibble    3.1.8
-    ## ✔ lubridate 1.9.2     ✔ tidyr     1.3.0
-    ## ✔ purrr     1.0.1     
-    ## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
-    ## ✖ dplyr::filter() masks stats::filter()
-    ## ✖ dplyr::lag()    masks stats::lag()
-    ## ℹ Use the ]8;;http://conflicted.r-lib.org/conflicted package]8;; to force all conflicts to become errors
-
-``` r
 ggplot(data, aes(x=anno, y=immatricolazioni, group=paese))+
   geom_point(aes(color=paese))
 ```
 
 ![](Pb4---Regression_files/figure-gfm/unnamed-chunk-3-1.png)<!-- -->
+
+## Modello
 
 ### Costruzione del modello e stima dei parametri
 
@@ -123,37 +111,169 @@ summary(first_model)
     ## Multiple R-squared:  0.9717, Adjusted R-squared:  0.9658 
     ## F-statistic:   165 on 5 and 24 DF,  p-value: < 2.2e-16
 
-\#con eps \~ N (0, sigma ^ 2), x = 1, 2,. . . , 10 (anni) e
+#### Visualizzazione del modello
 
-\#g = Francia, Germania, Italia (EU country).
+``` r
+data$y_hat=predict(first_model, newdata = data[,-1])
+ggplot(data, aes(x=anno, y=immatricolazioni, group=paese))+
+  geom_point(aes(color=paese))+
+  geom_smooth(method='loess', aes(x=anno, y=y_hat, color=paese), formula = 'y ~ x')
+```
 
-\#(a) Stimare i 7 parametri del modello (SETTE: 3 intercette (beta0_g),
-3 pendenze (beta1_g) e sigma^2)
+![](Pb4---Regression_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
-\#(b) utilizzando test statistici appropriati, dichiarare se si ritiene
-necessario
+### Verifica del modello
 
-\#    includere nel modello:
+#### Verifica gaussianità dei risultati
 
-\#    1. la variabile x^2;
+``` r
+#verifica gaussianità dei residui
+shapiro.test(first_model$residuals) 
+```
 
-\#    2. la variable G;
+    ## 
+    ##  Shapiro-Wilk normality test
+    ## 
+    ## data:  first_model$residuals
+    ## W = 0.9713, p-value = 0.5753
 
-\#    3. l’effetto della variabile G sul coefficiente che moltiplica il
+Il P-Value (0.5753) è alto =\> è possibile accettare l’ipotesi H0
+secondo cui i residui sono distribuiti secondo legge gaussiana.
 
-\#       regressore x^2;
+#### Verifica omoschedasticità
 
-\#    4. l’effetto della variabile G sull’intercetta
+Omoschedasticità: proprietà di una collezione di variabili aleatorie di
+avere tutte la stessa varianza finita.
 
-\#(c) Una volta identificato il “miglior modello”, costruire tre
-intervalli di previsione
+In questo caso si vuole verificare che la varianza dei residui non sia
+dipendente dalla X
 
-\#    per il numero di veicoli registrati nei tre paesi durante
-l’undicesimo anno,
+``` r
+#verifica omoschedasticità
+plot(I(data$anno^2), scale(first_model$residuals)) 
+abline(h = 0) 
+```
 
-\#    in modo che le tre nuove osservazioni cadranno simultaneamente
-all’interno
+![](Pb4---Regression_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
-\#    dei rispettivi intervalli con il 95% di probabilità.
+Dal grafico si nota che i residui sono tutti sparsi intorno allo zero:
+non hanno pattern particolari e quindi si può concludere che i residui
+siano omoschedastici.
 
-  
+#### Strumento alternativo
+
+``` r
+par(mfrow=c(2,2)) 
+plot(first_model)
+```
+
+![](Pb4---Regression_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+- **Gaussianità**: Il secondo grafico mostra il Q-Q Plot dei residui.
+  Dal momento che si collocano lungo la diagonale, si può concludere che
+  seguano legge normale.
+
+  > Il Q-Q Plot è la rappresentazione grafica dei quantili di una
+  > distribuzione. Confronta la distribuzione cumulata della variabile
+  > osservata con la distribuzione cumulata della normale. Se la
+  > variabile osservata presenta una distribuzione normale, i punti di
+  > questa distribuzione congiunta si addensano sulla diagonale che va
+  > dal basso verso l’alto e da sinistra verso destra.
+
+- **Omoschedasticità**: Dal primo grafico si possono identificare
+  eventuali comportamenti non lineari dei residui rispetto alle X. Se i
+  residui sono omoschedastici, ci si aspetta di osservare una “nuvola”
+  intorno allo zero senza pattern particolari. La linea rossa permette
+  di idenficare eventuali pattern. In questo caso sembra che le X
+  spieghino in modo lineare le Y, quindi non sono state ignorate
+  eventuali relazioni non lineari.
+
+### Backward Selection
+
+La backward selection parte dal modello più complesso e prova a mano a
+mano a eliminare dei predittori con l’obiettivo di averne meno
+possibile. Seleziona il modello che minimizza l’AIC, ovvero un indice
+che misura quanto il modello è capace di stimare i dati da cui è stato
+creato.
+
+``` r
+library(MASS)
+```
+
+    ## 
+    ## Caricamento pacchetto: 'MASS'
+
+    ## Il seguente oggetto è mascherato da 'package:dplyr':
+    ## 
+    ##     select
+
+``` r
+backward = stepAIC(first_model,details = T, direction = "backward")
+```
+
+    ## Start:  AIC=146.76
+    ## immatricolazioni ~ paese + I(anno^2) + paese:I(anno^2)
+    ## 
+    ##                   Df Sum of Sq     RSS    AIC
+    ## <none>                          2679.4 146.76
+    ## - paese:I(anno^2)  2    9710.8 12390.2 188.70
+
+``` r
+summary(backward)
+```
+
+    ## 
+    ## Call:
+    ## lm(formula = immatricolazioni ~ paese + I(anno^2) + paese:I(anno^2), 
+    ##     data = data)
+    ## 
+    ## Residuals:
+    ##     Min      1Q  Median      3Q     Max 
+    ## -21.821  -7.176   1.165   7.502  16.117 
+    ## 
+    ## Coefficients:
+    ##                         Estimate Std. Error t value Pr(>|t|)    
+    ## (Intercept)              23.4917     5.1874   4.529 0.000138 ***
+    ## paeseGermania           -10.5285     7.3360  -1.435 0.164142    
+    ## paeseItalia              -8.8056     7.3360  -1.200 0.241730    
+    ## I(anno^2)                 0.7896     0.1031   7.662 6.72e-08 ***
+    ## paeseGermania:I(anno^2)   0.8610     0.1458   5.907 4.28e-06 ***
+    ## paeseItalia:I(anno^2)     1.3415     0.1458   9.204 2.42e-09 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## 
+    ## Residual standard error: 10.57 on 24 degrees of freedom
+    ## Multiple R-squared:  0.9717, Adjusted R-squared:  0.9658 
+    ## F-statistic:   165 on 5 and 24 DF,  p-value: < 2.2e-16
+
+In questo caso la stepwise backward selection non è stata in grado di
+eliminare alcun predittore perché si sarebbe avuto un peggioramento
+dell’AIC. Il modello suggerito è quindi quello inizialmente formulato.
+
+## Intervalli di previsione
+
+Sulla base del modello sopra formulato, vado a costruire tre intervalli
+di prevsione per il numero di veicoli registrati nei tre paesi durante
+l’undicesimo anno in modo che le tre nuove osservazioni cadranno
+simultaneamente all’interno dei rispettivi intervalli con il 95% di
+probabilità.
+
+``` r
+alpha=0.05
+pred_year=11
+pred_intervals = predict(first_model, data.frame(paese=levels(data$paese), anno=pred_year), interval = "prediction", level = 1- alpha)
+pred_intervals
+```
+
+    ##        fit       lwr      upr
+    ## 1 119.0386  90.21029 147.8670
+    ## 2 212.6943 183.86594 241.5227
+    ## 3 272.5509 243.72252 301.3792
+
+``` r
+boxplot(t(pred_intervals), names=levels(data$paese))
+```
+
+![](Pb4---Regression_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+## 

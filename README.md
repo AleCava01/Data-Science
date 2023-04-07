@@ -3,7 +3,7 @@ This repository contains some project from the Business Data Analytics class and
 
 
 ### Statistical hypothesis testing 
-[:coffee: Cafe in Milan :en:](/Pages/cafe-in-Milan.md)
+[:coffee: Cafe in Milan :gb:](/Pages/cafe-in-Milan.md)
 Description: a simple Two-sample pooled t-test (equal variances) for a cafe in Milan with theory references
 
 ### PCA (Principal Component Analysis)

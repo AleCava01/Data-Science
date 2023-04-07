@@ -228,4 +228,4 @@ p_value
 
     ## [1] 0.001620479
 
-The P-Value is very low, so we can safely reject $H_0$
+The P-Value is low =\> we can safely reject $H_0$

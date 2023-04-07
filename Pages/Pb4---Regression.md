@@ -291,11 +291,3 @@ ggplot(data, aes(x=anno, y=immatricolazioni, group=paese))+
 ```
 
 ![](Pb4---Regression_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
-
-``` r
-?aes
-```
-
-    ## avvio in corso del server httpd per la guida ... fatto
-
-## 

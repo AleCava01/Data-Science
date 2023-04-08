@@ -157,8 +157,8 @@ T
 $$
 
 By setting the level of significance $\alpha = 0.05$, under $H_0$, the
-above equation will tell us that at 95% probability, T will stay between
-the quantiles:
+above equation will tell us that, with a probability of 95%, T will
+stand between the quantiles:
 
 ``` r
 alpha = 0.05

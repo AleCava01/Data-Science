@@ -1,6 +1,7 @@
 Canadian cities temperatures 🌡
 ================
-<img align="right" src="images/canada_city.jpg" width="550" margin-top:30/>
+
+<div style="display: inline-block">
 
 ## Table of contents
 
@@ -15,11 +16,19 @@ Canadian cities temperatures 🌡
     heteroscedasticity](#solving-heteroscedasticity) <br> 3.5. [New
     model visualization](#new-model-visualization)
 
+</div>
+
+<div style="display: inline-block; float:right; margin-top:70px;">
+
+<img src="images/canada_city.jpg" width="400" />
+
+</div>
+
 ## 
 
 ## Description
 
-The pb2.txt file contains the 2006’s average monthly temperatures
+The file “Pb2.txt” contains the 2006’s average monthly temperatures
 measured in three canadian cities (Edmonton, Montreal and Resolute).
 It’s common practice in meteorology to assume that the average monthly
 temperatures fluctuates as a sinusoid around an average year value.

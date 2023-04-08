@@ -1,6 +1,4 @@
-<h1> 🔬🧪⚗️🔍💡📊📈🌐 </h1>
-
-# Data-Science 
+# 📊 Data Science 🧪
 This repository contains some project from the Business Data Analytics class and other personal projects.
 
 

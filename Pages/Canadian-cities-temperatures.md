@@ -15,9 +15,3 @@ $$ Having:
 - $T_g(t)$ : Temperature of the t-month in g-locality
 
 - $\epsilon \sim N(0,2)$
-
-<div style="text-align:center">
-
-ciao porccoddoo
-
-</div>

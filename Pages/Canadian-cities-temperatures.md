@@ -1,7 +1,6 @@
 Canadian cities temperatures 🌡
 ================
-
-<div style="display: inline-block">
+<img align="right" src="images/canada_city.jpg" width="550" margin-top:30/>
 
 ## Table of contents
 
@@ -15,14 +14,6 @@ Canadian cities temperatures 🌡
     Diagnostics](#regression-diagnostics) <br> 3.4. [Solving
     heteroscedasticity](#solving-heteroscedasticity) <br> 3.5. [New
     model visualization](#new-model-visualization)
-
-</div>
-
-<div style="display: inline-block; float:right; margin-top:70px;">
-
-<img src="images/canada_city.jpg" width="400" />
-
-</div>
 
 ## 
 

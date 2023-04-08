@@ -117,7 +117,7 @@ summary(first_model)
 data$y_hat=predict(first_model, newdata = data[,-1])
 ggplot(data, aes(x=anno, y=immatricolazioni, group=paese))+
   geom_point(aes(color=paese))+
-  geom_smooth(method='loess', aes(x=anno, y=y_hat, color=paese), formula = 'y ~ x')
+  geom_smooth(method='lm', aes(x=anno, y=y_hat, color=paese), formula = y ~ poly(x,9),se=FALSE)
 ```
 
 ![](Immatricolazioni-in-Europa_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
@@ -282,7 +282,7 @@ boxplot(t(pred_intervals), names=levels(data$paese), col=c("#F8766D","#00BA38","
 data$y_hat=predict(first_model, newdata = data[,-1])
 ggplot(data, aes(x=anno, y=immatricolazioni, group=paese))+
   geom_point(aes(color=paese))+
-  geom_smooth(method='loess', aes(x=anno, y=y_hat, color=paese), formula = 'y ~ x')+
+  geom_smooth(method='lm', aes(x=anno, y=y_hat, color=paese), formula = y ~ poly(x,9), se = FALSE)+
   geom_pointrange(aes(x=11, y=pred_intervals[1,1], ymin=pred_intervals[1,3], ymax=pred_intervals[1,2]), color="#F8766D")+
     geom_pointrange(aes(x=11, y=pred_intervals[2,1], ymin=pred_intervals[2,3], ymax=pred_intervals[2,2]), color="#00BA38")+
     geom_pointrange(aes(x=11, y=pred_intervals[3,1], ymin=pred_intervals[3,3], ymax=pred_intervals[3,2]), color="#619CFF")+

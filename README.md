@@ -1,5 +1,5 @@
 # 📊 Data Science 🧪
-This repository contains some project from the Business Data Analytics class I'm attending at university and other personal projects.
+This repository contains some exercises from the Business Data Analytics class I'm attending at university and other personal projects.
 
 
 ### Statistical hypothesis testing 

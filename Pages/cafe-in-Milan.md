@@ -1,6 +1,10 @@
 Two-sample pooled t-test (equal variances) for a cafe in Milan
 ================
 
+<p align="center">
+  <img src="https://user-images.githubusercontent.com/52034469/230723755-46fc8ecc-2297-4a5f-8583-50ec991fa042.png" />
+</p>
+
 ## Table of contents
 
 1.  [Data](#data)
@@ -194,7 +198,10 @@ ggplot(data = t_distrib) +
   geom_text(label="t(α/2)",aes(x= upper_quantile, y = -0.01), color="#444444")
 ```
 
-![](cafe-in-Milan_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+<p align="center">
+  <img src="cafe-in-Milan_files/figure-gfm/unnamed-chunk-6-1.png" />
+</p>
+
 
 As we can see, the test statistic T $(-3.705009)$ is out of the range
 $[-2.100922 , 2.100922]$

@@ -185,6 +185,7 @@ ggplot(data = t_distrib) +
   geom_polygon(data = rbind(c(upper_quantile,0),subset(t_distrib, x > upper_quantile)
   ), aes(x, y ), fill="#999999")+
   geom_vline(xintercept=t, color="red")+
+  geom_vline(xintercept=0, color="#aaaaaa")+
   geom_text(label="T",aes(x= t+0.1, y = -0.01), color="red")+
   geom_text(label="Non rejection region",aes(x= 0, y = 0.15), color="#444444")+
   geom_text(label="Rejection \n region",aes(x= -3, y = 0.05), color="#444444")+

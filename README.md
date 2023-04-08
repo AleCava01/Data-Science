@@ -10,4 +10,7 @@ This repository contains some project from the Business Data Analytics class and
 [:star: Product ratings](/Pages/Product_ratings.md)
 
 ### Linear Regression
+[:maple_leaf: Canadian cities temperatures](/Pages/Canadian-cities-temperatures.md) : Multiple linear regression with heteroscedasticity problem resolution.
+
 [:car: Immatricolazioni in Europa](/Pages/Immatricolazioni-in-Europa.md)
+

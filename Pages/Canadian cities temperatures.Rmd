@@ -1,0 +1,259 @@
+---
+title: "Canadian cities temperatures 🌡 "
+output: github_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<img src="images/canada_city.jpg" width="550" align="right"/>
+
+## Table of contents
+
+1.  [Description](#description)
+2.  [Data](#data) <br> 2.1. [Data reading](#data-reading) <br> 2.2.
+    [Dataset transformation](#dataset-transformation) <br> 2.3. [Data
+    visualization](#data-visualization)
+3.  [Model](#model) <br> 3.1. [Coefficients
+    estimation](#coefficients-estimation) <br> 3.2. [Model
+    visualization](#model-visualization) <br> 3.3. [Regression
+    Diagnostics](#regression-diagnostics) <br> 3.4. [Solving
+    heteroscedasticity](#solving-heteroscedasticity) <br> 3.5. [New
+    model visualization](#new-model-visualization)
+
+## Description {#description}
+
+The file "Pb2.txt" contains the 2006's average monthly temperatures
+measured in three canadian cities (Edmonton, Montreal and Resolute).
+It's common practice in meteorology to assume that the average monthly
+temperatures fluctuates as a sinusoid around an average year value.
+
+## Data {#data}
+
+### Data reading {#data-reading}
+
+```{r}
+data_temp = read.table("../Datasets/Pb2.txt")
+data_temp
+```
+
+### Dataset transformation {#dataset-transformation}
+
+We have to transform our dataset in order to make it more suitable for
+the following steps.
+
+```{r}
+months <- rep(1:12, 3) #creates the new months column
+regions <- factor(rep(names(data_temp), each=12)) #creates the new sites column
+temps <- c(data_temp$Edmonton, data_temp$Resolute, data_temp$Montreal)
+new_data_temp = data.frame(month = months, region = regions, temp = temps)
+
+head(new_data_temp)
+```
+
+### Data visualization {#data-visualization}
+
+```{r}
+library(GGally)
+ggplot(data=new_data_temp, mapping = aes(x=month, y=temp, color=region))+
+  geom_point()+
+  scale_y_continuous(breaks=seq(-35,25,by=10))+
+  scale_x_continuous(breaks=1:12, labels = c("Gen","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))
+
+```
+
+## Model {#model}
+
+$$
+T_g(t)=\beta_{0g}+\beta_{1g}\cdot \sin \Big(\frac{2\pi}{12}\cdot t\Big)+\beta_{2g}\cdot \cos \Big(\frac{2\pi}{12}\cdot t\Big)+\epsilon_g
+$$ Having:
+
+-   $t$ : Month number (1,2,...,12)
+
+-   $g$ : Region (Edmonton, Montreal, Resolute)
+
+-   $T_g(t)$ : Temperature of the t-month in g-region
+
+-   $\epsilon \sim N(0,2)$
+
+### Coefficients estimation {#coefficients-estimation}
+
+```{r message=FALSE}
+library(rgl)
+
+temp_model_1 = lm(temp~region+I(sin(2*pi*month/12)):region+I(cos(2*pi*month/12)):region,data=new_data_temp) #create model
+#Create table with beta coefficients estimates for each country to better visualize the correspondence with the formula.
+cf = coef(temp_model_1)
+beta_intercepts = c(cf[1], cf[1]+cf[2], cf[1]+cf[3])
+beta_1 = c(cf[4],cf[5], cf[6])
+beta_2 = c(cf[7],cf[8],cf[9])
+coef_table = data.frame(beta_intercepts, beta_1, beta_2)
+row.names(coef_table) = c("Edmonton", "Montreal", "Resolute")
+coef_table
+```
+
+### Model visualization {#model-visualization}
+
+```{r}
+new_data_temp$y_hat = predict(temp_model_1, newdata = new_data_temp[,-3])
+
+ggplot(data=new_data_temp, mapping = aes(x=month, y=temp, color=region))+
+  geom_point()+
+  scale_x_continuous(breaks=1:12, labels = c("Gen","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))+
+  scale_y_continuous(breaks=seq(-35,35,by=10))+
+  stat_smooth(method='lm', aes(x=month, y=y_hat), formula = y ~ poly(x,11), se=FALSE)
+```
+
+### Regression Diagnostics {#regression-diagnostics}
+
+```{r}
+summary(temp_model_1) #summary with diagnostical information about the model and coefficients esteems
+```
+
+✅ R-Squared index is high and all the introduced variables have high
+significance (low P-Values for the null hypotesis beta=0).
+
+```{r}
+shapiro.test(temp_model_1$residuals)
+```
+
+✅ The Shapiro-Wilk normality test has high P-Value so we can accept
+$H_0$ (residuals are normally-distributed) and confirm the model
+assumption we made at the beginning.
+
+```{r message=FALSE}
+par(mfrow=c(2,2))
+plot(temp_model_1)
+library(car)
+```
+
+⚠️ From the first graph it seems that there could be some other
+sinusoidal relations between the variate and the covariates. Also the
+graph below highlights a decrease in residuals variance at higher fitted
+values.
+
+We might have a problem of heteroscedasticity. Let's investigate.
+
+```{r}
+library(car)
+spreadLevelPlot(temp_model_1)
+ncvTest(temp_model_1)
+```
+
+❌ The Non-constant Variance Score Test returns a P-Value of 0.0083 that
+means that we have to reject the null hypotesis of costant variance.
+
+This represents a violation of the core assumptions of OLS regression.
+
+### Solving heteroscedasticity {#solving-heteroscedasticity}
+
+💡 We can try to remove the interactions between month and region
+variables
+
+```{r message=FALSE}
+library(rgl)
+
+temp_model_2 = lm(temp~region+I(sin(2*pi*month/12))+I(cos(2*pi*month/12)),data=new_data_temp)
+summary(temp_model_2)
+```
+
+The summary shows high statistical significance for every predictor and
+$R^2$ index is still very high.
+
+The new estimated coefficients are:
+
+```{r}
+#Create table with beta coefficients estimates for each country to better visualize the correspondence with the formula.
+cf2 = coef(temp_model_2)
+beta_intercepts = c(cf2[1], cf2[1]+cf2[2], cf2[1]+cf2[3])
+beta_1 = rep(cf2[4],3)
+beta_2 = rep(cf2[5],3)
+coef_table = data.frame(beta_intercepts, beta_1, beta_2)
+row.names(coef_table) = c("Edmonton", "Montreal", "Resolute")
+coef_table
+```
+
+Now we can see if heteroscedasticity has been solved
+
+```{r}
+par(mfrow=c(2,2))
+plot(temp_model_2)
+ncvTest(temp_model_2)
+outlierTest(temp_model_1)
+```
+
+-   ✅ Residuals vs Fitted values doesn't show particular patterns =\>
+    We have correctly included the non linear relations between the
+    covariates and the response variable.
+
+-   ✅ The linearity of residuals in the Q-Q Plot tell us that they are
+    normally distributed.
+
+-   ✅ The horizontal line in Scale-Location graph and the high P-Value
+    of NCV Test indicates that heteroscedasticity has been solved
+
+-   ✅ There are no leverage points in the bottom right graph.
+
+-   ✅ Bonferroni's test and the graphs doesn't show any outlier.
+
+All the model's assumptions are respected.
+
+### New model visualization {#new-model-visualization}
+
+```{r}
+new_data_temp$y_hat2 = predict(temp_model_2, newdata = new_data_temp[,-3])
+
+ggplot(data=new_data_temp, mapping = aes(x=month, y=temp, color=region))+
+  geom_point()+
+  scale_x_continuous(breaks=1:12, labels = c("Gen","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"))+
+  scale_y_continuous(breaks=seq(-35,35,by=10))+
+  stat_smooth(method='lm', aes(x=month, y=y_hat2), formula = y ~ poly(x,11), se=FALSE)+
+  stat_smooth(method='lm', aes(x=month, y=y_hat ), linetype="dashed", linewidth=.5, formula = y ~ poly(x,11), se=FALSE)
+
+```
+
+## Model reformulation
+
+$$
+T_g(t)=\beta_{0g}+\beta_{1g}\cdot \sin \Big(\frac{2\pi}{12}\cdot t\Big)+\beta_{2g}\cdot \cos \Big(\frac{2\pi}{12}\cdot t\Big)+\epsilon_g
+$$
+
+Using the identity
+
+$$
+\sin (\alpha-\beta)=\sin (\alpha)\cdot\cos(\beta)-\cos(\alpha)\cdot \sin(\beta)
+$$
+
+The model can be reformulated as following:
+
+$$
+T_g(t)=\mu_g+A_g\cdot \sin \Big (\frac{2\pi}{12}\cdot(t-\phi_g)\Big )+\epsilon_g
+$$
+
+### New coefficients
+
+$$
+\mu_g=\beta_{0g}
+$$
+
+$$
+A_g=\sqrt{\beta_{1g}^2+\beta_{2g}^2}
+$$
+
+$$
+\phi_g=\frac{6}{\pi}\arctan\Big(-\frac{\beta_{2g}}{\beta_{1g}}\Big )
+$$
+
+```{r}
+mu_g = beta_intercepts
+A_g=sqrt(beta_1^2+beta_2^2)
+phi_g=(6/pi)*atan(-beta_2/beta_1)
+coef_table = data.frame(mu_g, A_g, phi_g)
+row.names(coef_table) = c("Edmonton", "Montreal", "Resolute")
+coef_table
+summary(temp_model_1)
+```

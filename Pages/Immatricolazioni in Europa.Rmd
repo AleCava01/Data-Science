@@ -1,0 +1,158 @@
+---
+title: "Immatricolazioni in Europa - Regressione e stepwise selection"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+rm(list = ls())
+```
+
+Il file Pb4.txt riporta il numero Y (espresso in migliaia di unità) di veicoli immatricolati annualmente in tre paesi dell'Unione europea (Francia, Germania e Italia) durante un periodo di riferimento di 10 anni.
+
+Modelli economici recenti descrivono il comportamento di questa variabile:
+
+$$
+Y | (X = x, G = g) = \beta_{0g} + \beta_{1g} \cdot x^2 + \epsilon
+$$
+
+-   $\epsilon \sim N(0,\sigma^2)$
+
+-   $x :$ anni $\in [1,2,…,10]$
+
+-   $g:$ Francia, Germania, Italia
+
+## Dati
+
+### Caricamento dei dati
+
+```{r}
+pb4 = read.csv("../Datasets/Pb4.txt",sep=" ")
+str(pb4)
+```
+
+### Trasformazione del dataset
+
+```{r }
+head(pb4)
+pb4$anno <- 1:10
+Y = c(pb4$Italia, pb4$Francia, pb4$Germania)
+cat = c(rep("Italia",10), rep("Francia", 10), rep("Germania",10))
+year = rep(1:10,3)
+data = data.frame (immatricolazioni = Y,
+                   anno = year,
+                   paese = cat)
+data$paese <- factor(data$paese)
+head(data)
+```
+
+### Visualizzazione dei dati
+
+```{r message=FALSE}
+library(tidyverse)
+ggplot(data, aes(x=anno, y=immatricolazioni, group=paese))+
+  geom_point(aes(color=paese))
+```
+
+## Modello
+
+### Costruzione del modello e stima dei parametri
+
+```{r}
+library(rgl)
+first_model = lm(immatricolazioni ~ paese + I(anno^2) + paese:I(anno^2), data=data)
+summary(first_model)
+
+```
+
+#### Visualizzazione del modello
+
+```{r}
+data$y_hat=predict(first_model, newdata = data[,-1])
+ggplot(data, aes(x=anno, y=immatricolazioni, group=paese))+
+  geom_point(aes(color=paese))+
+  geom_smooth(method='lm', aes(x=anno, y=y_hat, color=paese), formula = y ~ poly(x,9),se=FALSE)
+```
+
+### Verifica del modello
+
+#### Verifica gaussianità dei risultati
+
+```{r}
+#verifica gaussianità dei residui
+shapiro.test(first_model$residuals) 
+
+```
+
+Il P-Value (0.5753) è alto =\> è possibile accettare l'ipotesi H0 secondo cui i residui sono distribuiti secondo legge gaussiana.
+
+#### Verifica omoschedasticità
+
+Omoschedasticità: proprietà di una collezione di variabili aleatorie di avere tutte la stessa varianza finita.
+
+In questo caso si vuole verificare che la varianza dei residui non sia dipendente dalla X
+
+```{r}
+#verifica omoschedasticità
+plot(first_model$fitted.values, scale(first_model$residuals)) 
+abline(h = 0) 
+
+```
+
+Dal grafico si nota che i residui sono tutti sparsi intorno allo zero: non hanno pattern particolari e quindi si può concludere che i residui siano omoschedastici.
+
+#### Strumento alternativo
+
+```{r}
+par(mfrow=c(2,2)) 
+plot(first_model)
+
+```
+
+-   **Gaussianità**: Il secondo grafico mostra il Q-Q Plot dei residui. Dal momento che si collocano lungo la diagonale, si può concludere che seguano legge normale.
+
+    > Il Q-Q Plot è la rappresentazione grafica dei quantili di una distribuzione. Confronta la distribuzione cumulata della variabile osservata con la distribuzione cumulata della normale. Se la variabile osservata presenta una distribuzione normale, i punti di questa distribuzione congiunta si addensano sulla diagonale che va dal basso verso l'alto e da sinistra verso destra.
+
+-   **Omoschedasticità**: Dal primo grafico si possono identificare eventuali comportamenti non lineari dei residui rispetto alle X. Se i residui sono omoschedastici, ci si aspetta di osservare una "nuvola" intorno allo zero senza pattern particolari. La linea rossa permette di idenficare eventuali pattern. In questo caso sembra che le X spieghino in modo lineare le Y, quindi non sono state ignorate eventuali relazioni non lineari.
+
+### Backward Selection
+
+La backward selection parte dal modello più complesso e prova a mano a mano a eliminare dei predittori con l'obiettivo di averne meno possibile. Seleziona il modello che minimizza l'AIC, ovvero un indice che misura quanto il modello è capace di stimare i dati da cui è stato creato.
+
+```{r}
+library(MASS)
+backward = stepAIC(first_model,details = T, direction = "backward")
+summary(backward)
+```
+
+In questo caso la stepwise backward selection non è stata in grado di eliminare alcun predittore perché si sarebbe avuto un peggioramento dell'AIC. Il modello suggerito è quindi quello inizialmente formulato.
+
+## Intervalli di previsione
+
+Sulla base del modello sopra formulato, vado a costruire tre intervalli di previsione per il numero di veicoli registrati nei tre paesi durante l'undicesimo anno in modo che le tre nuove osservazioni cadranno simultaneamente all'interno dei rispettivi intervalli con il 95% di probabilità.
+
+```{r}
+alpha=0.05
+pred_year=11
+pred_intervals = predict(first_model, data.frame(paese=levels(data$paese), anno=pred_year), interval = "prediction", level = 1- alpha)
+pred_intervals
+
+```
+
+### Visualizzazione degli intervalli
+
+```{r}
+boxplot(t(pred_intervals), names=levels(data$paese), col=c("#F8766D","#00BA38","#619CFF"), main="Intervalli di previsione per immatricolazioni (anno 11)")
+```
+
+```{r}
+data$y_hat=predict(first_model, newdata = data[,-1])
+ggplot(data, aes(x=anno, y=immatricolazioni, group=paese))+
+  geom_point(aes(color=paese))+
+  geom_smooth(method='lm', aes(x=anno, y=y_hat, color=paese), formula = y ~ poly(x,9), se = FALSE)+
+  geom_pointrange(aes(x=11, y=pred_intervals[1,1], ymin=pred_intervals[1,3], ymax=pred_intervals[1,2]), color="#F8766D")+
+    geom_pointrange(aes(x=11, y=pred_intervals[2,1], ymin=pred_intervals[2,3], ymax=pred_intervals[2,2]), color="#00BA38")+
+    geom_pointrange(aes(x=11, y=pred_intervals[3,1], ymin=pred_intervals[3,3], ymax=pred_intervals[3,2]), color="#619CFF")+
+  scale_x_continuous(breaks=seq(1,11,by=1))+
+  scale_y_continuous(breaks=seq(0,300,by=50))
+```

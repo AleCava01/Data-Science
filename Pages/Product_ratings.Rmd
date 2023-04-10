@@ -1,0 +1,113 @@
+---
+title: "Product ratings"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+Il dataset Product ratings contiene dati su una serie di prodotti nel catalogo di un noto marketplance online. Per ogni mese e ogni prodotto è elencato il totale delle review che hanno ottenuto da 5 stelle a 1 stella e tutte le volte che il prodotto è stato acquistato ma non valutato.
+
+Lettura e visualizzazione del dataset
+
+```{r}
+product_data = read.csv("../Datasets/Product_ratings.txt", sep="\t")
+head(product_data)
+```
+
+Scatterplot con ggally per vedere se ci sono correlazioni ed è quindi possibile procedere alla riduzione dimensionale
+
+```{r echo=FALSE, message=FALSE}
+library(GGally)
+ggpairs(product_data[,-(1:2)])
+```
+
+Sussiste una correlazione tra le variabili =\> ha senso procedere con l'analisi delle componenti principali
+
+------------------------------------------------------------------------
+
+## PCA Steps
+
+1.  Normalizzazione dei dati
+2.  Matrice di covarianza (correlazione per dati standardizzati)
+3.  Calcolare le componenti principali (loadings)
+4.  Selezione componenti principali
+5.  Proiezione dei dati nel nuovo spazio e interpretazione dei risultati
+
+------------------------------------------------------------------------
+
+### Step 1 - Normalizzazione
+
+Estraggo solo le variabili numeriche dal dataset e normalizzo i dati
+
+```{r}
+product_data_num = product_data[,-(1:2)]
+head(product_data_num)
+product_data_scaled = scale(product_data_num)
+head(product_data_scaled)
+```
+
+### Step 2 - Matrice di correlazione
+
+Calcolo e visualizzazione della matrice di covarianza dei dati standardizzati = matrice di correlazione dei dati numerici
+
+```{r echo=FALSE}
+corr_matrix <- cov(product_data_scaled)
+#same as: cor(product_data_num)
+library("ggcorrplot")
+ggcorrplot(corr_matrix)
+```
+
+Si nota una forte correlazione tra tutte le variabili (come si notava già prima con lo scatterplot)
+
+### Step 3 - Calcolo componenti principali
+
+```{r}
+PC_products_scaled <- princomp(product_data_scaled)
+summary(PC_products_scaled)
+```
+
+Si osserva che oltre il 97% della varianza è spiegata dalle prime due componenti.
+
+Ottendo le componenti principali (versori/loadings):
+
+```{r}
+PC_products_scaled$loadings
+```
+
+### Step 4 - Selezione delle componenti principali
+
+Utilizzo il criterio del gomito
+
+```{r}
+plot(cumsum(PC_products_scaled$sd^2)/sum(PC_products_scaled$sd^2), type="b", axes =F, xlab="numero di componenti", ylab="contributo alla varianza totale", ylim=c(0,1))
+abline(h=1, col="blue")
+box()
+axis(2,at=0:10/10,labels=0:10/10)
+axis(1,at=1:ncol(product_data_num),labels = 1:ncol(product_data_num),las=2)
+```
+
+Analizzo anche gli scores attraverso un boxplot
+
+```{r}
+boxplot(PC_products_scaled$scores, col="gold")
+```
+
+=\> Scelgo le prime due componenti
+
+```{r}
+par(mfrow = c(2,1))
+for(i in 1:2) barplot(PC_products_scaled$loadings[,i], ylim = c(-1,1))
+```
+
+### Step 5 - Proiezione dei dati nel nuovo spazio e interpretazione dei risultati
+
+```{r}
+library(ggfortify)
+autoplot(PC_products_scaled, loadings=TRUE, loadings.label=TRUE)
+```
+
+La prima componente indica se un prodotto in un particolare mese è più recensito del solito.
+
+La seconda componente indica invece quanto un prodotto viene gradito in un particolare mese.

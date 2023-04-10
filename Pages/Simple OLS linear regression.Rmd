@@ -1,0 +1,14 @@
+---
+title: "Simple OLS linear regression"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+592.56+2*-61.99
+abs(-707.23+2*-55.61+80*14.15-(-707.23-55.61*4+14.15*90))
+
+```

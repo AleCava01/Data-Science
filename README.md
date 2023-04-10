@@ -1,6 +1,11 @@
+<<<<<<< HEAD
 # Data-Science
 
 This repository contains some project from the Business Data Analytics class and other personal projects.
+=======
+# 📊 Data Science 🧪
+This repository contains some exercises from the Business Data Analytics class I'm attending at university and other personal projects.
+>>>>>>> b8746fbe6cf9089787cda5ec31cd2d28dac37b5b
 
 ### Statistical hypothesis testing
 

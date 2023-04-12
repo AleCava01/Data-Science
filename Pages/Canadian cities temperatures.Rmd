@@ -255,5 +255,4 @@ phi_g=(6/pi)*atan(-beta_2/beta_1)
 coef_table = data.frame(mu_g, A_g, phi_g)
 row.names(coef_table) = c("Edmonton", "Montreal", "Resolute")
 coef_table
-summary(temp_model_1)
 ```

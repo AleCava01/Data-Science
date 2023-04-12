@@ -354,3 +354,49 @@ ggplot(data=new_data_temp, mapping = aes(x=month, y=temp, color=region))+
 ```
 
 ![](Canadian-cities-temperatures_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+## Model reformulation
+
+$$
+T_g(t)=\beta_{0g}+\beta_{1g}\cdot \sin \Big(\frac{2\pi}{12}\cdot t\Big)+\beta_{2g}\cdot \cos \Big(\frac{2\pi}{12}\cdot t\Big)+\epsilon_g
+$$
+
+Using the identity
+
+$$
+\sin (\alpha-\beta)=\sin (\alpha)\cdot\cos(\beta)-\cos(\alpha)\cdot \sin(\beta)
+$$
+
+The model can be reformulated as following:
+
+$$
+T_g(t)=\mu_g+A_g\cdot \sin \Big (\frac{2\pi}{12}\cdot(t-\phi_g)\Big )+\epsilon_g
+$$
+
+### New coefficients
+
+$$
+\mu_g=\beta_{0g}
+$$
+
+$$
+A_g=\sqrt{\beta_{1g}^2+\beta_{2g}^2}
+$$
+
+$$
+\phi_g=\frac{6}{\pi}\arctan\Big(-\frac{\beta_{2g}}{\beta_{1g}}\Big )
+$$
+
+``` r
+mu_g = beta_intercepts
+A_g=sqrt(beta_1^2+beta_2^2)
+phi_g=(6/pi)*atan(-beta_2/beta_1)
+coef_table = data.frame(mu_g, A_g, phi_g)
+row.names(coef_table) = c("Edmonton", "Montreal", "Resolute")
+coef_table
+```
+
+    ##                mu_g      A_g     phi_g
+    ## Edmonton   2.187760 16.40975 -1.794979
+    ## Montreal   6.049656 16.40975 -1.794979
+    ## Resolute -16.617737 16.40975 -1.794979

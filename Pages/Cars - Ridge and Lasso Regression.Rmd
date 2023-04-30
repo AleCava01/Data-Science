@@ -11,6 +11,74 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r}
 library(ISLR)
+library(glmnet)
+library(ggfortify)
+library(pls)
+library(car)
 data <- Auto
 pairs(data,pch=19)
+names(data)
+```
+
+## Model
+
+```{r}
+library(MASS)
+first_model <- lm(mpg~.-name, data=data)
+summary(first_model)
+shapiro.test(first_model$residuals)
+par(mfrow=c(2,2))
+plot(first_model)
+
+```
+
+il p-value dello Shapiro-Wilk test è basso, quindi rifiuto H0 =\> i residui non sono gaussiani =\> crolla una delle ipotesi dell'OLS.
+
+## Valutazione della collinearità
+
+```{r}
+library(car)
+vif(first_model)
+
+```
+
+C'è una forte collinearità tra i predittori.
+
+### Gestione manuale della collinearità
+
+```{r}
+second_model = lm(mpg~.-name -displacement, data=data)
+vif(second_model)
+third_model = lm(mpg~.-name -displacement -weight, data=data)
+vif(third_model)
+fourth_model = lm(mpg~.-name -displacement -weight -horsepower, data=data)
+vif(fourth_model)
+summary(fourth_model)
+```
+
+## Ridge
+
+```{r}
+x = model.matrix(mpg~.-name , data = data)[,-1]
+lambdas = c(10^seq(10,-2,length.out = 100) ,0)
+model_ridge = glmnet(x,data$mpg,lambda = lambdas,alpha = 0, thresh = 1e-10) 
+
+autoplot(model_ridge,label = T, xvar = "lambda")
+autoplot(model_ridge, label = T, xvar = "dev")
+cv.model_ridge = cv.glmnet(x,data$mpg,lambda = lambdas,alpha = 0,nfolds = 10)
+autoplot(cv.model_ridge)
+
+bestlam = cv.model_ridge$lambda.min    ## prima linea tratteggiata 
+bestlam                                ## (lambda in corrispondenza del minor MSE in CV)
+
+reglam = cv.model_ridge$lambda.1se    ## seconda linea tratteggiata (il piu' grande lambda, 
+reglam                                ## cioe' il modello piu' regolarizzato, 
+                                      ## che abbia MSE CV entro una dev standard dal minimo MSE)
+
+indbest = which(cv.model_ridge$lambda == bestlam)
+indreg = which(cv.model_ridge$lambda == reglam)
+
+table <- coef(model_ridge)[,c(101,indbest,indreg)] 
+table
+coef(fourth_model)
 ```

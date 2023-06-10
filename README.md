@@ -13,6 +13,8 @@ This repository contains some exercises from the Business Data Analytics class I
 
 ### Linear Regression
 
+[:book: Index Librorum Prohibitorum](/Pages/Prohibitorum.md) : Compare two model to estimate how the number of books added to the index changed during time.
+
 [:maple_leaf: Canadian cities temperatures](/Pages/Canadian-cities-temperatures.md) : Multiple linear regression with heteroscedasticity problem resolution.
 
 [:car: Immatricolazioni in Europa](/Pages/Immatricolazioni-in-Europa.md)

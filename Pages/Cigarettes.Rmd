@@ -1,0 +1,63 @@
+---
+title: "Cigarettes"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Cigarettes
+
+The file "cigarettes_consumption.csv" contains information about cigarettes in 1000 regions in the world.
+
+Specifically, the features are:
+
+-   **cigarettes**: number of cigarettes packages sold for inhabitant in the considered region
+
+-   **age**: average age of the population in the considered region
+
+-   **income**: the average income of the population in the considered region
+
+-   **population**: million of inhabitants in the considered region
+
+-   **price**: average price of a pack of cigarettes
+
+-   **tax**: tax amout for a pack of cigarettes
+
+-   **ethnicity**: ethnicity of the major part of the inhabitants ("White","Causasian","Hispanic")
+
+-   **country**: binary (1: USA, 0: Otherwise)
+
+-   **treatment**: binary variable (1: the considered region has been subject of the cigarettes consumption reduction programme, 0: otherwise)
+
+```{r}
+data <- read.csv("../Datasets/cigarettes_consumption.csv", sep=";")
+data$population_normalized=NULL
+head(data)
+```
+
+## Question
+
+Evaluate the impact of price on the average quantity of cigarettes sold per inhabitant.
+
+## OLS regression
+
+```{r}
+data$population <- scale(data$population)
+formula = cigarettes ~ age + income + population + price + ethnicity + country
+ols_model_1 = lm(formula, data)
+summary(ols_model_1)
+```
+
+The price doesn't seem significant due to the low p-value (there is no statistical support to say that the influence of price over the number of sold packages is not 0)
+
+## IV regression
+
+```{r}
+library(ivreg)
+library(rdd)
+library(rdrobust)
+mod_iv = ivreg(cigarettes ~ age + income + population + price + ethnicity + country | age + income + population + tax + ethnicity + country, data = data)
+summary(mod_iv, diagnostics = TRUE)
+```

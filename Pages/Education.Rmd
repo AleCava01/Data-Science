@@ -9,11 +9,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 <img src="images/money_education.jfif" width="300" align="right"/>
 
-# Income vs Education
+Simple linear regression exercise con education - income dataset "Income2.csv"
 
 ## Data loading
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 #importing libraries
 library(GGally)
 library(MASS)
@@ -98,7 +98,6 @@ data$model_A_inc <- predict(model_A, data.frame(Education=data$Education))
 data$model_B_inc <- predict(model_B, data.frame(Education=data$Education))
 data$model_C_inc <- predict(model_C, data.frame(Education=data$Education))
 df <- data.frame(Education=rep(data$Education,3), Income=data$Income,Prediction=c(data$model_A_inc,data$model_B_inc,data$model_C_inc), Predicted=c(rep("model A",30),rep("model B",30),rep("model C",30)))
-df
 ggplot(df, aes(x=Education, y=Prediction, color=Predicted))+
   geom_line(size=1.2)+
   geom_point(aes(x=Education, y=Income), color="black")+

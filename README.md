@@ -15,4 +15,6 @@ This repository contains some exercises from the Business Data Analytics class I
 
 [:maple_leaf: Canadian cities temperatures](/Pages/Canadian-cities-temperatures.md) : Multiple linear regression with heteroscedasticity problem resolution.
 
+[:coin: Education - Income](/Pages/Education.md)
+
 [:car: Immatricolazioni in Europa](/Pages/Immatricolazioni-in-Europa.md)

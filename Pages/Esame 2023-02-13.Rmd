@@ -1,0 +1,283 @@
+---
+title: "Esame 2023-02-13"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Parte B
+
+## Data loading
+
+```{r message=FALSE, warning=FALSE}
+data <- read.csv("../Datasets/ricavi.csv", fileEncoding = "utf8")
+head(data)
+str(data)
+j=1
+for (i in data){
+  if(typeof(i)=="integer"){
+      data[,j] <- factor(i)
+  }
+  j=j+1
+}
+str(data)
+```
+
+## Domanda 1
+
+```{r message=FALSE, warning=FALSE}
+library(GGally)
+library(MASS)
+library(car)
+library(rgl)
+first_model = lm(ricavi ~ .-ricavi_alti, data = data)
+first_model$coefficients
+summary(first_model)
+
+```
+
+## Domanda 2
+
+```{r warning=FALSE}
+summary(first_model)
+varianza_spiegata=0.5541
+aumento_ricavi = 3*coef(first_model)[9]
+aumento_ricavi
+```
+
+## Domanda 3
+
+I giorni promozionali (variabile trattamento=1) non sono stati scelti in maniera casuale e c'è il sospetto che non siano comparabili col campione dei giorni in cui la promozione non è avvenuta (variabile trattamento=0).
+
+Si utilizzi la tecnica del propensity score matching per identificare un gruppo di giornate di vendita senza promozione speciale (i.e., un gruppo di giornate non trattate) comparabile con le giornate promozionali.
+
+Si utilizzino le covariate staff, under30, weekend, ed il metodo di distance nearest per effettuare il matching.
+
+Si calcoli lo stimatore ingenuo dell'effetto della promozione sui ricavi, prima e dopo il matching. Individuare
+
+le risposte corrette tra le seguenti:
+
+-   Lo stimatore ingenuo prima del matching è maggiore dell'effetto della variabile trattamento nell'esercizio precedente FALSO
+
+-   Lo stimatore ingenuo dopo il matching è maggiore dell'effetto della variabile trattamento nell'esercizio precedente FALSO
+
+-   Lo stimatore ingenuo dopo il matching è maggiore dello stimatore ingenuo prima del matching VERO
+
+-   Lo stimatore ingenuo dopo il matching è maggiore o uguale a 0.6657 VERO
+
+```{r warning=FALSE}
+library(knitr)
+library(corrplot)
+library(ggplot2)
+library(sjPlot)
+library(stargazer)
+library(MatchIt)
+library(MASS)
+library(mvtnorm)
+library(ivreg)
+library(rdrobust)
+
+data_non_trattati <- data[data$trattamento==0,]
+data_trattati <- data[data$trattamento==1,]
+
+#verifico se sono effettivamente diversi
+
+#t-test H0: differenza tra gruppi = a 0
+#t-test H1: differenza tra gruppi diversa da 0
+#p-value ALTO => BENE: Gruppi confrontabili
+#p-value BASSO => MALE: Le medie dei due gruppi sono diverse, non sono confrontabili
+
+
+cat("--------------------------------------------------\n PRE MATCHING \n --------------------------------------------------\n")
+t.test(data_non_trattati$staff, data_trattati$staff) #MALE
+t.test(data_non_trattati$clienti, data_trattati$clienti) #MALE
+t.test(data_non_trattati$under30, data_trattati$under30) #MALE
+t.test(data_non_trattati$famiglie, data_trattati$famiglie) #MALE
+cat("--------------------------------------------------\n")
+
+
+#Naive estimator pre matching
+naive_estimator_pre = mean(data_trattati$ricavi) - mean(data_non_trattati$ricavi)
+cat("naive_estimator pre matching",naive_estimator_pre,'\n')
+cat("--------------------------------------------------\n")
+
+#MATCHING
+
+psm_result = matchit(
+  data$trattamento ~ data$staff + data$under30 + data$weekend, 
+  method = "nearest")
+data_post_psm = match.data(psm_result, data=data)
+data_post_psm_trattati = data_post_psm[data_post_psm$trattamento==1,]
+data_post_psm_non_trattati = data_post_psm[data_post_psm$trattamento==0,]
+
+cat("--------------------------------------------------\n POST MATCHING \n --------------------------------------------------\n")
+t.test(data_post_psm_trattati$staff, data_post_psm_non_trattati$staff)# MALE
+t.test(data_post_psm_trattati$clienti, data_post_psm_non_trattati$clienti)#OK
+t.test(data_post_psm_trattati$under30, data_post_psm_non_trattati$under30) #OK
+t.test(data_post_psm_trattati$famiglie, data_post_psm_non_trattati$famiglie) #OK, 0.9785
+cat("--------------------------------------------------\n")
+
+
+#Naive estimator after matching
+naive_estimator_post = mean(data_post_psm_trattati$ricavi) - mean(data_post_psm_non_trattati$ricavi)
+cat("naive_estimator post matching: ",naive_estimator_post,'\n')
+cat("--------------------------------------------------\n")
+```
+
+## Domanda 4
+
+Si controlli se la procedura di matching ha reso il campione dei trattati e quello dei non trattati comparabili, tramite t-test. Si eseguano due t-test, prima e dopo il matching, tra il campione dei trattati e quello dei non trattati, per le variabili under30, staff e famiglie. Si individui le risposte corrette tra le seguenti:
+
+-   Con un livello di significatività dell'1%, il t-test indica che dopo il matching il campione dei trattati ha una media della variabile 'under30' comparabile a quella del campione dei non trattati, mentre prima del matching non era così. VERO
+
+-   Con un livello di significatività dell'1%, il t-test indica che prima del matching il campione dei trattati aveva una media della variabile 'staff' comparabile a quella del campione dei non trattati, mentre dopo il matching non è così. FALSO
+
+-   Con un livello di significatività dell'1%, il t-test indica che dopo il matching il campione dei trattati ha una media della variabile 'famiglie' comparabile a quella del campione dei non trattati, mentre prima del matching non era così. VERO
+
+-   Il t-test eseguito sulla variabile 'famiglie' tra il campione dei trattati e quello dei non trattati dopo il matching riporta un p-value inferiore a .85 FALSO
+
+-   Tutte le altre risposte sono false FALSO
+
+## Domanda 5
+
+Si stimi una regressione lineare sul dataset post-matching, usando le stesse variabili, sia dipendenti che indipendenti, del modello di cui alla domanda 1 (nota: controllare le colonne dei dataset prima di procedere per assicurarsi di selezionare le variabili corrette). Si selezionino le risposte vere.
+
+-   L'effetto di trattamento stimato con il modello di questa domanda è più alto dell'effetto di trattamento stimato nella domanda 1 VERO
+
+-   L'effetto di trattamento stimato con il modello di questa domanda è più alto di quello stimato con lo stimatore ingenuo sul dataset post-matching VERO
+
+-   L'effetto di trattamento stimato con il modello di questa domanda è più alto di quello stimato con lo stimatore ingenuo sul dataset pre-matching VERO
+
+-   L'effetto di trattamento stimato in questa domanda è più credibile, vale a dire più vicino all'effetto di trattamento reale, di quello stimato nella domanda 1 VERO
+
+```{r}
+data_post_psm$subclass=NULL
+data_post_psm$distance=NULL
+data_post_psm$weights=NULL
+
+str(data_post_psm)
+second_model = lm(ricavi ~ .-ricavi_alti, data = data_post_psm)
+summary(second_model)
+
+```
+
+## Domanda 6
+
+Stimare un modello di regressione logistica, che stimi la probabilità di ottenere alti ricavi, in funzione delle variabili pioggia, estate, weekend, natale e staff.
+
+-   C'è evidenza, al 5% di significatività statistica, per affermare che la probabilità di ottenere alti ricavi sia più alta se il giorno di vendita è stato un sabato o una domenica? Perchè? SI, perché il p-value del parametro weekend è inferiore al 5%, l'effetto della variabile weekend è statisticamente significativo per livelli di significatività superiori al 2.85%. Il parametro è positivo, quindi essendo 1: ricavi alti, weekend va a influenzare positivamente la probabilità che si verifichi 1, e quindi che si verifichi l'evento alti ricavi.
+
+-   Quant'è l'ODDS Ratio tra una giornata di pioggia e non? 1.3673
+
+-   Qual è la probabilità stimata dal modello che in un dato giorno infrasettimanale di pioggia estiva, il negozio con 3 commessi abbia ottenuto alti ricavi? 0.70532
+
+```{r}
+log_model_1 <- glm(ricavi_alti ~ pioggia + estate + weekend + natale + staff, family=binomial(link=logit), data)
+summary(log_model_1) 
+
+odds_ratio_pioggia=exp(coef(log_model_1)[2])
+odds_ratio_pioggia
+
+newdata = data.frame(estate=factor(1),pioggia=factor(1),staff=3,natale=factor(0),weekend=factor(0))
+
+predict(log_model_1, newdata = newdata, type = "response") 
+```
+
+## Domanda 7
+
+Si supponga di voler addestrare un classificatore basato sul modello stimato nel quesito precedente. In particolare, si classifica come positivo (quindi come giornata con alti ricavi) un giorno corrispondente ad una stima di probabilità superiore al 40%.
+
+-   Calcolare Sensitivity (ovvero True Positive Rate) e Specificity (ovvero True Negative Rate) del classificatore così specificato.
+
+```{r}
+pred_class <- ifelse(log_model_1$fitted.values>0.4,1,0)
+misclass_table <- as.matrix(table(pred_class, data$ricavi_alti))
+misclass_table
+TP <- max(misclass_table[2,2],0)
+TN <- max(misclass_table[1,1],0)
+FP <- max(misclass_table[2,1],0)
+FN <- max(misclass_table[1,2],0)
+TPR <- TP/(TP+FN) #Sensitivity
+TNR <- TN/(TN+FP) #Specificity
+FPR = 1 - TNR #False Positive Rate
+
+#Stampa a video dei valori
+linebreak <- "\n ----------------------------------------------------- \n"
+cat(linebreak,"True Positive Rate (Sensitivity): ",TPR)
+cat(linebreak,"True Negative Rate (Specificity): ",TNR)
+cat(linebreak,"False Positive Rate: ",FPR)
+
+#ACCURACY e APER da usare con cautela. Implicitamente 
+# richiedono che i dati siano bilanciati, ovvero le proporzioni nei dati osservati rispettano quelle reali
+acc  = (TN + TP)/dim(data)[1] #Accuracy
+aper = 1 - acc #Misclassification Rate
+cat(linebreak,"Accuracy: ",acc)
+cat(linebreak,"Misclassification rate: ",aper,linebreak)
+```
+
+```{r}
+pred <- log_model_1$fitted.values
+# Vediamo come variano queste quantità all'aumento della soglia per la classificazione:
+p = seq(0.4,0.9, by = 0.1)
+sens = spec = acc = aper = rep(0,length(p))
+for (i in 1:length(p))
+{
+  pred_class=ifelse(log_model_1$fitted.values>p[i],1,0) 
+  misclass_table=as.matrix(table(pred_class, data$ricavi_alti))
+  TP <- max(misclass_table[2,2],0)
+  TN <- max(misclass_table[1,1],0)
+  FP <- max(misclass_table[2,1],0)
+  FN <- max(misclass_table[1,2],0)
+  sens[i] = TP/(TP + FN)
+  spec[i] = TN/(TN + FP)
+  acc[i]  = (TN + TP)/dim(data)[1]
+  aper[i] = 1 -acc[i]
+}
+
+plot(p, sens, col = "red", type = "l", ylim = c(0,1))
+lines(p, spec, col = "green", type = "l")
+lines(p, acc, col = "salmon", type = "l" )
+lines(p, aper, col = "purple", type = "l")
+legend("bottomright", fill = c("red","green","salmon", "purple"), legend = c("sensitivity","specificity","accuracy","aper"))
+
+# Un possibile criterio è scegliere il punto di intersezione, se non abbiamo preferenze
+# [oppure (se aper è affidabile), la soglia che lo minimizza]
+library(PRROC)
+## la curva ROC è una soluzione più generale:
+PRROC_obj = roc.curve(scores.class0 = pred, weights.class0=as.integer(data$ricavi_alti), curve=TRUE)
+plot(PRROC_obj)  ## qual è il migliore p0 per classificare? Tipicamente si
+                 ## scelgono i punti più vicini all'angolo in alto a sinistra,
+                 ## ma questo comunque dipende fortemente dal problema reale
+
+#La quantità AUC, area under the curve è una misura della bontà generale del classificatore basato 
+#sulle probabilità: AUC=0.5 corrisponde ad un classificatore inutile (più propriamente, un classificatore 
+#che assegna le etichette a caso) mentre AUC=1 corrisponde ad un classificatore perfetto 
+#(o almeno, perfetto sul training set). Valori più vicini a 1 corrispondono quindi a modelli migliori.
+
+
+```
+
+## Domanda 8
+
+Si considerino ora le tre variabili staff, under30 e famiglie. Si costruisca un modello di classificazione k-NN (k=2) per la variabile ricavi_alti. Assumere train e test sets coincidenti.
+
+• Calcolare la misclassification table e riportare l'APER.
+
+```{r}
+library(class)
+k = 2
+sub_data = data[, c(2,7,9,10)]
+result.knn = knn(train = sub_data[,2:4], test = sub_data[,2:4], cl = data$ricavi_alti, k = 2, prob = T)
+
+misclass_table = table( pred = result.knn, true = data$ricavi_alti)
+misclass_table
+TP <- max(misclass_table[2,2],0)
+TN <- max(misclass_table[1,1],0)
+FP <- max(misclass_table[2,1],0)
+FN <- max(misclass_table[1,2],0)
+knn.acc  = (TN + TP)/dim(data)[1] #Accuracy
+knn.aper = 1 - knn.acc #Misclassification Rate
+cat(linebreak,"APER: ",knn.aper)
+```

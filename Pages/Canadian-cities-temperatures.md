@@ -1,9 +1,3 @@
----
-editor_options: 
-  markdown: 
-    wrap: 72
----
-
 # Canadian cities temperatures 🌡
 
 <img src="images/canada_city.jpg" width="550" align="right"/>

@@ -2,7 +2,7 @@
 title: "Data Science Competition"
 author: "Alessandro Cavalieri"
 date: "2023-10-10"
-output: html_document
+output: html_notebook
 ---
 
 ```{r setup, include=FALSE}

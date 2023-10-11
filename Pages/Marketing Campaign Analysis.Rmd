@@ -1,0 +1,318 @@
+---
+title: "Data Science Competition"
+author: "Alessandro Cavalieri"
+date: "2023-10-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Marketing Campaign Data Analysis
+
+Your Team is the Marketing and Data Department of a food delivery company, and you are presented a dataset which contains information on the customers and on previous marketing campaigns interactions with each customer.
+
+It is your challenge to understand the data, find business opportunities and insights and to propose any data driven action to optimize the campaigns results & generate value to the company.
+
+### Key Objectives are:
+
+1.  Explore the data -- don't just plot means and counts. Provide insights, define cause and effect. Provide a better understanding of the characteristic features of respondents;
+2.  Propose and describe a customer segmentation based on customers behaviors
+
+## Dataset loading and exploration
+
+```{r}
+data <- read.csv("../Datasets/marketing_campaign.csv", sep=';')
+data <- data[complete.cases(data),] #dropping rows containing null values
+head(data)
+str(data)
+```
+
+### **Content**
+
+-   **AcceptedCmp1** - 1 if customer accepted the offer in the 1st campaign, 0 otherwise
+
+-   **AcceptedCmp2** - 1 if customer accepted the offer in the 2nd campaign, 0 otherwise
+
+-   **AcceptedCmp3** - 1 if customer accepted the offer in the 3rd campaign, 0 otherwise
+
+-   **AcceptedCmp4** - 1 if customer accepted the offer in the 4th campaign, 0 otherwise
+
+-   **AcceptedCmp5** - 1 if customer accepted the offer in the 5th campaign, 0 otherwise
+
+-   **Response** (target) - 1 if customer accepted the offer in the last campaign, 0 otherwise
+
+-   **Complain** - 1 if customer complained in the last 2 years
+
+-   **DtCustomer** - date of customer\'s enrolment with the company
+
+-   **Education** - customer\'s level of education
+
+-   **Marital** - customer\'s marital status
+
+-   **Kidhome** - number of small children in customer\'s household
+
+-   
+**Teenhome** - number of teenagers in customer\'s household
+
+-   
+**Income** - customer\'s yearly household income
+
+-   **MntFishProducts** - amount spent on fish products in the last 2 years
+
+-   **MntMeatProducts** - amount spent on meat products in the last 2 years
+
+-   **MntFruits** - amount spent on fruits products in the last 2 years
+
+-   **MntSweetProducts** - amount spent on sweet products in the last 2 years
+
+-   **MntWines** - amount spent on wine products in the last 2 years
+
+-   **MntGoldProds** - amount spent on gold products in the last 2 years
+
+-   **NumDealsPurchases** - number of purchases made with discount
+
+-   **NumCatalogPurchases** - number of purchases made using catalogue
+
+-   **NumStorePurchases** - number of purchases made directly in stores
+
+-   **NumWebPurchases** - number of purchases made through company\'s web site
+
+-   **NumWebVisitsMonth** - number of visits to company\'s web site in the last month
+
+-   **Recency** - number of days since the last purchase
+
+## Principal Component Analysis
+
+```{r}
+library(dplyr)
+library(tidyverse)
+```
+
+```{r}
+#extracting only numeric feature
+data_num <- data %>% select_if(is.numeric)
+str(data_num)
+
+#check if all the values in these columns are the same
+all(data_num$Z_CostContact == 3)
+all(data_num$Z_Revenue == 11)
+#they are all the same, so they won't contribute to explain variance, thus can be removed
+data_num[,24:25] = NULL
+
+#proceeding with the pca
+pca = princomp(scale(data_num), scores=T)
+
+#plotting pca
+plot(cumsum(pca$sd^2)/sum(pca$sd^2), type='b', axes=F, xlab='number of components', 
+     ylab='contribution to the total variance', ylim=c(0,1), lwd=2)
+abline(h=1, col='red', lwd=1.5)
+abline(h=0.8, lty=2, col='blue', lwd=1.5)
+box()
+axis(2, at=0:10/10, labels=0:10/10)
+axis(1, at=1:ncol(data_num), labels=1:ncol(data_num), las=2)
+```
+
+```{r}
+k=3
+par(mar = c(1,4,0,2), mfrow = c(k,1))
+for(i in 1:k){
+  pca_component_df <- data.frame(Variable = rownames(pca$loadings),
+                                  Loadings = pca$loadings[, i])
+  print(ggplot(pca_component_df, aes(x=Variable, y=Loadings))+
+    geom_bar(stat='identity')+
+    ggtitle(paste("Component number ",i))+
+    coord_flip())
+}
+
+
+```
+
+There seem to be many relevant features that explain the variance, and also looking at the principal components the interpretation is not immediate.
+
+I would try to apply unsupervised clustering algorithms for further analysis
+
+## Monthly spending clustering
+
+I'll start with the analysis of the columns representing the spent amount on different products in the last two years.
+
+-   **MntFishProducts** - amount spent on fish products in the last 2 years
+
+-   **MntMeatProducts** - amount spent on meat products in the last 2 years
+
+-   **MntFruits** - amount spent on fruits products in the last 2 years
+
+-   **MntSweetProducts** - amount spent on sweet products in the last 2 years
+
+-   **MntWines** - amount spent on wine products in the last 2 years
+
+-   **MntGoldProds** - amount spent on gold products in the last 2 years
+
+For the purpose of the insights, I'll avoid to take MntGoldProds into account for this analysis only because I can't fully understand it's meaning.
+
+Firstly, let's check for correlations between these variables, so maybe we can reduce them.
+
+```{r}
+data_mnt <- data[,c('MntFishProducts','MntMeatProducts','MntFruits','MntSweetProducts','MntWines')]
+
+library(corrplot)
+correlation_matrix <- cor(data_mnt)
+corrplot(correlation_matrix, method = "color", type = "upper", tl.col = "black", tl.srt = 45)
+
+```
+
+There seem to be correlation between all the variables, probably that's because people who spend more on some product category just spend more in general.
+
+Let's use PCA again to see if we can find something more interesting.
+
+```{r}
+pca_mnt = princomp(scale(data_mnt), scores=T)
+
+#plotting pca
+plot(cumsum(pca_mnt$sd^2)/sum(pca_mnt$sd^2), type='b', axes=F, xlab='number of components', 
+     ylab='contribution to the total variance', ylim=c(0,1), lwd=2)
+abline(h=1, col='red', lwd=1.5)
+abline(h=0.8, lty=2, col='blue', lwd=1.5)
+box()
+axis(2, at=0:10/10, labels=0:10/10)
+axis(1, at=1:ncol(data_mnt), labels=1:ncol(data_mnt), las=2)
+```
+
+I'll extract the first three components as they explain over 80% of the total variance.
+
+```{r}
+k=3
+par(mar = c(1,4,0,2), mfrow = c(k,1))
+for(i in 1:k){
+  pca_component_df <- data.frame(Variable = rownames(pca_mnt$loadings),
+                                  Loadings = pca_mnt$loadings[, i])
+  print(ggplot(pca_component_df, aes(x=Variable, y=Loadings))+
+    geom_bar(stat='identity')+
+    ggtitle(paste("Component number ",i))+
+    coord_flip())
+}
+pca_mnt$loadings
+```
+
+The first component seem to be targeting high spending customers, the interpretation of the other two is more complicated.
+
+I can now try to find groups with K-means clustering.
+
+### K-Means Clustering
+
+```{r}
+set.seed(2)
+
+
+km.output = kmeans(data_mnt, centers = 2)
+plot(data_mnt, col=km.output$cluster, main="K-Means Clustering Results with K=2")
+results <- data.frame(Tot.Withinss = NA)
+km.output$tot.withinss
+
+km.output = kmeans(data_mnt, centers = 3)
+plot(data_mnt, col=km.output$cluster, main="K-Means Clustering Results with K=3")
+results <- data.frame(Tot.Withinss = NA)
+km.output$tot.withinss
+
+km.output = kmeans(data_mnt, centers = 4)
+plot(data_mnt, col=km.output$cluster, main="K-Means Clustering Results with K=4")
+results <- data.frame(Tot.Withinss = NA)
+km.output$tot.withinss
+
+km.output = kmeans(data_mnt, centers = 5)
+plot(data_mnt, col=km.output$cluster, main="K-Means Clustering Results with K=5")
+results <- data.frame(Tot.Withinss = NA)
+km.output$tot.withinss
+```
+
+```{r}
+data_hc <- data[,c('MntFishProducts','MntMeatProducts','MntFruits')]
+metric <- dist(data_hc)
+metric_matrix = as.matrix(metric)
+# Linkage completo
+hc.complete = hclust(metric, method="complete")
+# Linkage average
+hc.average = hclust(metric, method="average")
+# Single Linkage
+hc.single = hclust(metric, method="single")
+
+# plotting dendograms
+par(mfrow=c(1,3))
+plot(hc.complete,main="Complete Linkage", xlab="", sub="", cex=.9)
+plot(hc.average, main="Average Linkage", xlab="", sub="", cex=.9)
+plot(hc.single, main="Single Linkage", xlab="", sub="", cex=.9)
+```
+
+```{r}
+# k=4 clusters:
+clusters_complete = cutree(hc.complete, 5)
+
+library(rgl)
+plot3d(data_hc, col = clusters_complete,size=6)
+
+```
+
+## Extra
+
+### Logistic regression
+
+```{r}
+library(MASS)
+library(car)
+library(rgl)
+library(GGally)
+library(titanic)
+library(PRROC)
+
+#Converting Dt_Customer to Date type
+data$Dt_Customer <- as.Date(data$Dt_Customer)
+#Extract year from Dt_Customer and save it as new column
+data$year <- as.integer(format(data$Dt_Customer, "%Y"))
+
+#Categorical data factorization
+data$year <- as.factor(data$year)
+data$Complain <- as.factor(data$Complain)
+data$Education <- as.factor(data$Education)
+data$Marital_Status <- as.factor(data$Marital_Status)
+
+str(data)
+
+#Logistic regression model
+log_model_1 <- glm(Response ~ .-AcceptedCmp1-AcceptedCmp2-AcceptedCmp3-AcceptedCmp4-AcceptedCmp5-Dt_Customer, family=binomial(link=logit), data)
+summary(log_model_1) 
+
+
+
+```
+
+```{r}
+# Coefficient estimates and standard errors from the logistic regression model
+coefficients <- coef(log_model_1)
+std_errors <- summary(log_model_1)$coef[, "Std. Error"]
+
+# Extract significant variables (those with p-value < 0.05)
+significant_indices <- which(summary(log_model_1)$coef[, "Pr(>|z|)"] < 0.05)
+significant_variables <- coefficients[significant_indices]
+significant_std_errors <- std_errors[significant_indices]
+
+# Calculate odds ratios and 95% confidence intervals
+odds_ratios <- exp(significant_variables)
+
+# Calculate lower and upper confidence intervals
+lower_ci <- exp(significant_variables - 1.96 * significant_std_errors)
+upper_ci <- exp(significant_variables + 1.96 * significant_std_errors)
+
+# Create a data frame to display odds ratios and confidence intervals
+odds_ratios_df <- data.frame(
+  Variable = names(odds_ratios),
+  Odds_Ratio = odds_ratios,
+  Lower_CI_95 = lower_ci,
+  Upper_CI_95 = upper_ci
+)
+
+# Print the odds ratios and confidence intervals
+print(odds_ratios_df)
+```
+
+The odds ratios in the table shows that customers who have PhD education and people who make many catalog purchases or visit the website are more likely to accept the marketing campaign. The suggestion for the marketing team would be to find ways to promote the website views and try to target more the less educated people. At the moment the marketing campaign seems to be relevant only for the people who actively search for it, posters in the shops may be useful to increase visibility.

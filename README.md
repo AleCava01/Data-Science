@@ -3,7 +3,7 @@ This repository contains some exercises from the Business Data Analytics class I
 
 ### Data Science Competition - PoliMi
 
-[🧑‍🤝‍🧑 Marketing Campaign Analysis](/Pages/Marketing-Campaign-Analysis.html) : Added clustering, still in progress
+[🧑‍🤝‍🧑 Marketing Campaign Analysis](/Pages/Marketing-Campaign-Analysis.md) : Added clustering, still in progress
 
 ### Statistical hypothesis testing
 

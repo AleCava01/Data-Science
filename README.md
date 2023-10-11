@@ -1,6 +1,10 @@
 # 📊 Data Science 🧪
 This repository contains some exercises from the Business Data Analytics class I'm attending at university and other personal projects.
 
+### Data Science Competition - PoliMi
+
+[🧑‍🤝‍🧑 Marketing Campaign Analysis](/Pages/Marketing-Campaign-Analysis.html) : Added clustering, still in progress
+
 ### Statistical hypothesis testing
 
 [:coffee: Cafe in Milan](/Pages/cafe-in-Milan.md) : A simple Two-sample pooled t-test (equal variances) for a cafe in Milan with theory references
@@ -18,3 +22,4 @@ This repository contains some exercises from the Business Data Analytics class I
 [:coin: Education - Income](/Pages/Education.md)
 
 [:car: Immatricolazioni in Europa](/Pages/Immatricolazioni-in-Europa.md)
+
